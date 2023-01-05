@@ -1,6 +1,6 @@
 #! /bin/bash
 
-PSQL="psql --username=freecodecamp --dbname=salon -c"
+PSQL="psql --username=freecodecamp --dbname=salon --tuples-only -c"
 
 echo -e "\n~~~~~ MY SALON ~~~~~\n"
 
@@ -19,29 +19,27 @@ echo "$SERVICES_OFFERED" | while read SERVICE_ID bar SERVICE_NAME
 
 read SERVICE_ID_SELECTED
 
-SELECTED_SERVICE=$($PSQL "SELECT name FROM services WHERE service_id=$SERVICE_ID_SELECTED")
-
-  if [[ -z $SELECTED_SERVICE ]]
+SERVICE_ID_FROM_DB=$($PSQL "SELECT service_id FROM services WHERE service_id = $SERVICE_ID_SELECTED;")
+  if [[ -z $SERVICE_ID_FROM_DB ]]
   then
     MAIN_MENU "Please enter a valid service number."
   else
     echo -e "\nPlease enter your phone number"
     read CUSTOMER_PHONE
-    CUSTOMER_ID=$($PSQL "SELECT customer_id FROM customers WHERE phone=$CUSTOMER_PHONE")
-    if [[ -z $CUSTOMER_ID ]]
+    CUSTOMER_NAME=$($PSQL "SELECT name FROM customers WHERE phone = '$CUSTOMER_PHONE';")
+    if [[ -z $CUSTOMER_NAME ]]
     then
-     echo "\nPlease enter your name."
+     echo -e "\nPlease enter your name."
      read CUSTOMER_NAME
-     INSERT_CUSTOMER_RESULT=$($PSQL "INSERT INTO customers(name, phone) VALUES('$CUSTOMER_NAME', '$CUSTOMER_PHONE')")
+     INSERT_CUSTOMER_RESULT=$($PSQL "INSERT INTO customers(phone, name) VALUES('$CUSTOMER_PHONE', '$CUSTOMER_NAME')")
     fi
-    echo "\nPlease enter a service time in HH:MM format."
+    CUSTOMER_ID=$($PSQL "SELECT customer_id FROM customers WHERE phone='$CUSTOMER_PHONE'")
+    echo -e "\nPlease enter a service time."
     read SERVICE_TIME
+    INSERT_APT_RESULT=$($PSQL "INSERT INTO appointments(customer_id, service_id, time) VALUES($CUSTOMER_ID, '$SERVICE_ID_FROM_DB', '$SERVICE_TIME')")
+    CHOSEN_SERVICE_NAME=$($PSQL "SELECT name FROM services WHERE service_id=$SERVICE_ID_FROM_DB")
+    echo -e "I have put you down for a $CHOSEN_SERVICE_NAME at $SERVICE_TIME,$CUSTOMER_NAME."
   fi
-
-#Next step: Need to create a row in the appointments table.
-#Need to if-else it for whether the phone number already exists.
-
-
 }
 
 MAIN_MENU
